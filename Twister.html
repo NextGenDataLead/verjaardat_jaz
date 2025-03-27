@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disco Twister</title>
+  <!-- Gebruik een speels lettertype voor kinderen -->
+  <link href="https://fonts.googleapis.com/css?family=Fredoka+One&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Fredoka One', cursive;
+      background: radial-gradient(circle at top center, #ff66cc, #6600ff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      color: white;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    h1 {
+      font-size: 3rem;
+      text-shadow: 2px 2px 5px #000;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    /* Flexibele container voor het rad */
+    #wheelContainer {
+      position: relative;
+      width: 90vw;
+      max-width: 400px;
+      height: 90vw;
+      max-height: 400px;
+      border: 5px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(255,255,255,0.7);
+      background: #000;
+    }
+    /* Het canvas vult de container */
+    #wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+    /* Pointer: onderaan de container, wijst omhoog */
+    #pointer {
+      position: absolute;
+      bottom: -25px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid white;
+    }
+    /* Weergave van de winnende kleur: een cirkel onder de pointer */
+    #winningColorDisplay {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      margin-top: 35px;
+      border: 3px solid white;
+      display: none;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* Disco-stijl voor de knop */
+    #spinButton {
+      margin-top: 40px;
+      padding: 15px 30px;
+      font-size: 1.5rem;
+      background-color: #ffcc00;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    #spinButton:active {
+      transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+  <h1>Disco Twister</h1>
+  <div id="wheelContainer">
+    <canvas id="wheel"></canvas>
+    <div id="pointer"></div>
+  </div>
+  <!-- De winnende kleur wordt hier getoond -->
+  <div id="winningColorDisplay"></div>
+  <button id="spinButton">Draai het rad!</button>
+  
+  <script>
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+    const numSegments = 8;
+    // Gebruik kleurnamen zodat je ze later makkelijk kunt aanpassen
+    const colorNames = ["red", "green", "blue", "pink", "purple", "cyan", "orange", "lime"];
+    let currentRotation = 0;
+    // Pointer in canvas-coördinaten: 90° (0° is rechts, 90° is onder)
+    const pointerAngle = 90; 
+    
+    // Zorg dat het canvas altijd de container vult
+    function resizeCanvas() {
+      const container = document.getElementById('wheelContainer');
+      canvas.width = container.offsetWidth;
+      canvas.height = container.offsetHeight;
+      drawWheel();
+    }
+    
+    // Teken het rad met de segmenten
+    function drawWheel() {
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const wheelRadius = Math.min(width, height) / 2;
+      const segmentAngle = (2 * Math.PI) / numSegments;
+      ctx.clearRect(0, 0, width, height);
+      for (let i = 0; i < numSegments; i++) {
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, wheelRadius, i * segmentAngle, (i + 1) * segmentAngle);
+        ctx.closePath();
+        ctx.fillStyle = colorNames[i % colorNames.length];
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(i * segmentAngle + segmentAngle / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 18px Fredoka One";
+        // (Optioneel) Voeg labeltekst toe in de segmenten, bijvoorbeeld "Feest!"
+        // ctx.fillText("Feest!", wheelRadius - 10, 10);
+        ctx.restore();
+      }
+    }
+    
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    const spinButton = document.getElementById('spinButton');
+    const winningColorDisplay = document.getElementById('winningColorDisplay');
+    
+    spinButton.addEventListener('click', function() {
+      spinButton.disabled = true;
+      
+      // Draai minimaal 3 volledige rondes plus een willekeurig aantal extra graden
+      const randomSpin = Math.floor(Math.random() * 360) + 1080;
+      currentRotation += randomSpin;
+      
+      canvas.style.transition = 'transform 3s ease-out';
+      canvas.style.transform = `rotate(${currentRotation}deg)`;
+      
+      setTimeout(() => {
+        // Bereken de finale rotatie binnen 360°:
+        const finalRotation = currentRotation % 360;
+        // Bepaal de hoek in de originele staat die nu bij de pointer (90°) ligt
+        const effectiveAngle = (pointerAngle - finalRotation + 360) % 360;
+        const segmentAngleDeg = 360 / numSegments;
+        const winningIndex = Math.floor(effectiveAngle / segmentAngleDeg);
+        const winningColor = colorNames[winningIndex];
+        
+        // Kies willekeurig een ledemaat
+        const ledematen = ['Linkerhand', 'Rechterhand', 'Linkervoet', 'Rechtervoet'];
+        const randomLimb = ledematen[Math.floor(Math.random() * ledematen.length)];
+        
+        // Update de kleurweergave direct voordat de alert wordt getoond
+        winningColorDisplay.style.backgroundColor = winningColor;
+        winningColorDisplay.textContent = winningColor;
+        winningColorDisplay.style.display = 'flex';
+        
+        // Geef even de browser de tijd om de update weer te geven voordat de alert verschijnt
+        setTimeout(() => {
+          alert(`Feest! Je krijgt: ${winningColor} ${randomLimb}!`);
+          spinButton.disabled = false;
+        }, 100);
+        
+      }, 3000);
+    });
+  </script>
+</body>
+</html>

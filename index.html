@@ -105,7 +105,6 @@
   </div>
   <!-- Container voor kleur en icoon -->
   <div id="resultContainer">
-    <!-- Default HTML order: icon then circle -->
     <span id="winningIcon"></span>
     <div id="winningColorDisplay"></div>
   </div>
@@ -115,18 +114,18 @@
     const canvas = document.getElementById('wheel');
     const ctx = canvas.getContext('2d');
 
-    // Kleurnamen: binnen elke kwart komen alle kleuren terug.
-    const colorNames = ["red", "green", "blue", "pink", "purple", "cyan", "orange", "lime"];
-    // Vier kwarten, elk gekoppeld aan een ledemaat.
+    // Vier kleuren: elk kwart bevat deze kleuren
+    const colorNames = ["yellow", "orange", "green", "pink"];
+    // Vier kwarten, elk gekoppeld aan een ledemaat
     const limbs = ["Linkerhand", "Rechterhand", "Linkervoet", "Rechtervoet"];
     
-    // In totaal: 4 kwarten * (aantal kleuren) per kwart
+    // Totale segmenten = 4 kwarten * (aantal kleuren) = 4 * 4 = 16
     const totalSegments = 4 * colorNames.length;
     let currentRotation = 0;
     
     // We willen dat het onderste kwart loopt van 45° tot 135° (midden op 90°).
     const angleOffset = 45; // in graden
-    // De pointer is visueel getekend op 90° (onderaan).
+    // De pointer is visueel getekend op 90° (onderaan)
     const pointerAngle = 90;
     
     // Zorg dat het canvas altijd de container vult
@@ -227,7 +226,7 @@
         const relativeAngle = (effectiveAngle - angleOffset + 360) % 360;
         const segmentSize = 360 / totalSegments;
         const winningSegmentIndex = Math.floor(relativeAngle / segmentSize);
-        // Kwart (limb) en kleur bepalen:
+        // Bepaal de kwart (limb) en de kleur
         const quarterIndex = Math.floor(winningSegmentIndex / colorNames.length);
         const colorIndex = winningSegmentIndex % colorNames.length;
         const winningLimb = limbs[quarterIndex];
@@ -248,10 +247,8 @@
         
         // Plaats het icoon links of rechts afhankelijk van de kant van het limb.
         if (winningLimb.includes("Linker")) {
-          // Voor "Linker": [winningIcon] then [winningColorDisplay]
           resultContainer.style.flexDirection = "row";
         } else {
-          // Voor "Rechter": [winningColorDisplay] then [winningIcon]
           resultContainer.style.flexDirection = "row-reverse";
         }
         winningIcon.textContent = icon;

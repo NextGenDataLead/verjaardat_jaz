@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Disco Twister</title>
   <!-- Gebruik een speels lettertype voor kinderen -->
-  <link href="https://fonts.googleapis.com/css?family=Fredoka+One&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css?family=Fredoka+One&display=swap" rel="stylesheet" />
   <style>
     body {
       margin: 0;
@@ -26,7 +26,7 @@
       margin-bottom: 20px;
       text-align: center;
     }
-    /* Flexibele container voor het rad */
+    /* Container voor het rad */
     #wheelContainer {
       position: relative;
       width: 90vw;
@@ -35,7 +35,7 @@
       max-height: 400px;
       border: 5px solid #fff;
       border-radius: 50%;
-      box-shadow: 0 0 15px rgba(255,255,255,0.7);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
       background: #000;
     }
     /* Het canvas vult de container */
@@ -56,18 +56,29 @@
       border-right: 15px solid transparent;
       border-top: 25px solid white;
     }
-    /* Weergave van de winnende kleur: een cirkel onder de pointer */
+    /* Container voor de uitkomst: bevat de kleurcirkel en het icoon */
+    #resultContainer {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 35px;
+      visibility: hidden;
+    }
+    /* De kleurcirkel */
     #winningColorDisplay {
       width: 60px;
       height: 60px;
       border-radius: 50%;
-      margin-top: 35px;
       border: 3px solid white;
-      display: none;
-      font-size: 0.9rem;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: 0.9rem;
+    }
+    /* Het uitkomsticoon */
+    #winningIcon {
+      font-size: 2rem;
+      margin: 0 10px;
     }
     /* Disco-stijl voor de knop */
     #spinButton {
@@ -79,7 +90,7 @@
       border-radius: 10px;
       cursor: pointer;
       transition: transform 0.2s;
-      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     }
     #spinButton:active {
       transform: scale(0.95);
@@ -92,19 +103,31 @@
     <canvas id="wheel"></canvas>
     <div id="pointer"></div>
   </div>
-  <!-- De winnende kleur wordt hier getoond -->
-  <div id="winningColorDisplay"></div>
+  <!-- Container voor kleur en icoon -->
+  <div id="resultContainer">
+    <!-- Default HTML order: icon then circle -->
+    <span id="winningIcon"></span>
+    <div id="winningColorDisplay"></div>
+  </div>
   <button id="spinButton">Draai het rad!</button>
   
   <script>
     const canvas = document.getElementById('wheel');
     const ctx = canvas.getContext('2d');
-    const numSegments = 8;
-    // Gebruik kleurnamen zodat je ze later makkelijk kunt aanpassen
+
+    // Kleurnamen: binnen elke kwart komen alle kleuren terug.
     const colorNames = ["red", "green", "blue", "pink", "purple", "cyan", "orange", "lime"];
+    // Vier kwarten, elk gekoppeld aan een ledemaat.
+    const limbs = ["Linkerhand", "Rechterhand", "Linkervoet", "Rechtervoet"];
+    
+    // In totaal: 4 kwarten * (aantal kleuren) per kwart
+    const totalSegments = 4 * colorNames.length;
     let currentRotation = 0;
-    // Pointer in canvas-coördinaten: 90° (0° is rechts, 90° is onder)
-    const pointerAngle = 90; 
+    
+    // We willen dat het onderste kwart loopt van 45° tot 135° (midden op 90°).
+    const angleOffset = 45; // in graden
+    // De pointer is visueel getekend op 90° (onderaan).
+    const pointerAngle = 90;
     
     // Zorg dat het canvas altijd de container vult
     function resizeCanvas() {
@@ -114,77 +137,128 @@
       drawWheel();
     }
     
-    // Teken het rad met de segmenten
+    function degToRad(deg) {
+      return (deg * Math.PI) / 180;
+    }
+    
+    // Teken het wiel: elk segment start bij (angleOffset + i*(360/totalSegments))
     function drawWheel() {
       const width = canvas.width;
       const height = canvas.height;
       const centerX = width / 2;
       const centerY = height / 2;
       const wheelRadius = Math.min(width, height) / 2;
-      const segmentAngle = (2 * Math.PI) / numSegments;
+      const segmentSize = 360 / totalSegments;
+      
       ctx.clearRect(0, 0, width, height);
-      for (let i = 0; i < numSegments; i++) {
+      
+      // Teken de segmenten (kleine segmenten voor de kleuren)
+      for (let i = 0; i < totalSegments; i++) {
+        const startAngleDeg = angleOffset + i * segmentSize;
+        const endAngleDeg = angleOffset + (i + 1) * segmentSize;
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, wheelRadius, i * segmentAngle, (i + 1) * segmentAngle);
+        ctx.arc(centerX, centerY, wheelRadius, degToRad(startAngleDeg), degToRad(endAngleDeg));
         ctx.closePath();
-        ctx.fillStyle = colorNames[i % colorNames.length];
+        // Herhaal de kleuren in elk kwart
+        const color = colorNames[i % colorNames.length];
+        ctx.fillStyle = color;
         ctx.fill();
         ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.stroke();
-        ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.rotate(i * segmentAngle + segmentAngle / 2);
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 18px Fredoka One";
-        // (Optioneel) Voeg labeltekst toe in de segmenten, bijvoorbeeld "Feest!"
-        // ctx.fillText("Feest!", wheelRadius - 10, 10);
-        ctx.restore();
+      }
+      
+      // Teken dikke, zwarte lijnen voor de kwartgrenzen (bij angleOffset, angleOffset+90, etc.)
+      for (let j = 0; j < 4; j++) {
+        const boundaryAngleDeg = angleOffset + j * 90;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(
+          centerX + wheelRadius * Math.cos(degToRad(boundaryAngleDeg)),
+          centerY + wheelRadius * Math.sin(degToRad(boundaryAngleDeg))
+        );
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      
+      // Voeg limb-labels toe in het midden van elke kwart (midden op: boundary + 45°)
+      for (let j = 0; j < 4; j++) {
+        const labelAngleDeg = angleOffset + j * 90 + 45;
+        const labelAngleRad = degToRad(labelAngleDeg);
+        const labelRadius = wheelRadius * 0.7;
+        const labelX = centerX + labelRadius * Math.cos(labelAngleRad);
+        const labelY = centerY + labelRadius * Math.sin(labelAngleRad);
+        ctx.fillStyle = "black"; // limb-teksten in zwart
+        ctx.font = "bold 16px Fredoka One";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(limbs[j], labelX, labelY);
       }
     }
     
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
     
-    const spinButton = document.getElementById('spinButton');
-    const winningColorDisplay = document.getElementById('winningColorDisplay');
+    const spinButton = document.getElementById("spinButton");
+    const resultContainer = document.getElementById("resultContainer");
+    const winningColorDisplay = document.getElementById("winningColorDisplay");
+    const winningIcon = document.getElementById("winningIcon");
     
-    spinButton.addEventListener('click', function() {
+    spinButton.addEventListener("click", function () {
       spinButton.disabled = true;
+      // Verberg resultaatcontainer voor een nieuwe spin
+      resultContainer.style.visibility = "hidden";
       
       // Draai minimaal 3 volledige rondes plus een willekeurig aantal extra graden
       const randomSpin = Math.floor(Math.random() * 360) + 1080;
       currentRotation += randomSpin;
       
-      canvas.style.transition = 'transform 3s ease-out';
+      canvas.style.transition = "transform 3s ease-out";
       canvas.style.transform = `rotate(${currentRotation}deg)`;
       
       setTimeout(() => {
-        // Bereken de finale rotatie binnen 360°:
+        // Bereken de finale rotatie binnen 360°
         const finalRotation = currentRotation % 360;
-        // Bepaal de hoek in de originele staat die nu bij de pointer (90°) ligt
+        // Bepaal de effectieve pointerpositie: als finalRotation == 0, dan moet de effectieve hoek 90° zijn.
         const effectiveAngle = (pointerAngle - finalRotation + 360) % 360;
-        const segmentAngleDeg = 360 / numSegments;
-        const winningIndex = Math.floor(effectiveAngle / segmentAngleDeg);
-        const winningColor = colorNames[winningIndex];
+        // Vertaal naar de getekende segmenten (rekening houdend met angleOffset)
+        const relativeAngle = (effectiveAngle - angleOffset + 360) % 360;
+        const segmentSize = 360 / totalSegments;
+        const winningSegmentIndex = Math.floor(relativeAngle / segmentSize);
+        // Kwart (limb) en kleur bepalen:
+        const quarterIndex = Math.floor(winningSegmentIndex / colorNames.length);
+        const colorIndex = winningSegmentIndex % colorNames.length;
+        const winningLimb = limbs[quarterIndex];
+        const winningColor = colorNames[colorIndex];
         
-        // Kies willekeurig een ledemaat
-        const ledematen = ['Linkerhand', 'Rechterhand', 'Linkervoet', 'Rechtervoet'];
-        const randomLimb = ledematen[Math.floor(Math.random() * ledematen.length)];
-        
-        // Update de kleurweergave direct voordat de alert wordt getoond
+        // Update de kleurcirkel
         winningColorDisplay.style.backgroundColor = winningColor;
         winningColorDisplay.textContent = winningColor;
-        winningColorDisplay.style.display = 'flex';
         
-        // Geef even de browser de tijd om de update weer te geven voordat de alert verschijnt
-        setTimeout(() => {
-          alert(`Feest! Je krijgt: ${winningColor} ${randomLimb}!`);
-          spinButton.disabled = false;
-        }, 100);
+        // Kies het juiste icoon op basis van hand of voet:
+        // Gebruik "✋" voor hand en "🦶" voor voet.
+        let icon = "";
+        if (winningLimb.includes("hand")) {
+          icon = "✋";
+        } else if (winningLimb.includes("voet")) {
+          icon = "🦶";
+        }
         
+        // Plaats het icoon links of rechts afhankelijk van de kant van het limb.
+        if (winningLimb.includes("Linker")) {
+          // Voor "Linker": [winningIcon] then [winningColorDisplay]
+          resultContainer.style.flexDirection = "row";
+        } else {
+          // Voor "Rechter": [winningColorDisplay] then [winningIcon]
+          resultContainer.style.flexDirection = "row-reverse";
+        }
+        winningIcon.textContent = icon;
+        
+        // Maak de container zichtbaar en re-enable de knop
+        resultContainer.style.visibility = "visible";
+        spinButton.disabled = false;
       }, 3000);
     });
   </script>
